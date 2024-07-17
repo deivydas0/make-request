@@ -6,14 +6,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::any('{any}', function (Request $request) {
     $desiredResponseCode = intval($request->input('response_code', 200));
-    $message             = sprintf(
+    $noWrap              = $request->boolean('no_wrap', true);
+
+    $message = sprintf(
         '%s: %s',
         $desiredResponseCode,
         data_get(Response::$statusTexts, $desiredResponseCode)
     );
 
-    $responseData = [
-        'data'    => $request->all(),
+    $info = [
         'headers' => collect($request->headers),
         'message' => $message,
         'method'  => $request->method(),
@@ -21,7 +22,11 @@ Route::any('{any}', function (Request $request) {
         'url'     => $request->fullUrl(),
     ];
 
-    // info($responseData);
+    $response = [
+        'request' => $info,
+    ];
 
-    return response()->json($responseData, $desiredResponseCode);
+    $data = $noWrap ? $request->all() : ['data' => $request->all()];
+
+    return response()->json(array_merge($response, $data), $desiredResponseCode);
 })->where('any', '.*');
